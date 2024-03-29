@@ -1,5 +1,5 @@
 from torch import nn
-from transformers.models.llama.modeling_llama import *
+from decilm.modeling_decilm import *
 
 ### BitLinear definition Source: https://github.com/microsoft/unilm/blob/master/bitnet/The-Era-of-1-bit-LLMs__Training_Tips_Code_FAQ.pdf
 def activation_quant(x):
@@ -58,7 +58,7 @@ pretraining.
 def convert_to_bitnet(model, copy_weights):
     for name, module in model.named_modules():
         # Replace linear layers with BitNet
-        if isinstance(module, LlamaSdpaAttention) or isinstance(module, LlamaMLP):
+        if isinstance(module, DeciLMAttention) or isinstance(module, LlamaMLP):
             for child_name, child_module in module.named_children():
                 if isinstance(child_module, nn.Linear):
                     bitlinear = BitLinear(child_module.in_features, child_module.out_features, child_module.bias is not None).to(device="cuda:0")
@@ -68,7 +68,7 @@ def convert_to_bitnet(model, copy_weights):
                             bitlinear.bias = child_module.bias
                     setattr(module, child_name, bitlinear)
         # Remove redundant input_layernorms
-        elif isinstance(module, LlamaDecoderLayer):
+        elif isinstance(module, DeciLMDecoderLayer):
             for child_name, child_module in module.named_children():
                 if isinstance(child_module, LlamaRMSNorm) and child_name == "input_layernorm":
                     setattr(module, child_name, nn.Identity().to(device="cuda:0"))
